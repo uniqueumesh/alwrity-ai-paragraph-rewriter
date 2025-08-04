@@ -3,7 +3,7 @@ import random
 import hashlib
 
 # Gemini API endpoint (for text generation)
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent"
 
 # Gemini input limits (tokens, but we use words as a proxy here)
 GEMINI_MAX_WORDS = 700
