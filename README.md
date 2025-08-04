@@ -1,2 +1,2 @@
-# alwrity-e-commerce-keyword-research-tool
-Generate high-performing e-commerce product-related keywords and long-tail queries.
+# alwrity-ai-paragraph-rewriter
+Rewrite and enhance paragraphs using AI for clarity, tone, and engagement.
