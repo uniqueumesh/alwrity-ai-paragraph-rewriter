@@ -7,7 +7,6 @@ Rewrite and enhance paragraphs using AI for clarity, tone, and engagement.
 ## Table of Contents
 - [Introduction](#introduction)
 - [Features](#features)
-- [Demo](#demo)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -36,13 +35,6 @@ Rewrite and enhance paragraphs using AI for clarity, tone, and engagement.
 - 🛡️ Enforces Gemini LLM input limits for reliability  
 - 🔄 Always generates a unique rewrite, even for repeated inputs  
 - 🖥️ No coding required!
-
----
-
-## Demo
-
-![Alwrity Paragraph Rewriter Screenshot](assets/demo.png)  
-*Screenshot: Simple, modern UI for rewriting paragraphs with style selection.*
 
 ---
 
