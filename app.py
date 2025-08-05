@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 import hashlib
+from sentence_transformers import SentenceTransformer, util
+import torch
 
 # --- App Branding and Header ---
 st.set_page_config(page_title="Alwrity - AI Paragraph Rewriter", page_icon="📝", layout="centered")
@@ -16,6 +18,13 @@ GEMINI_MAX_WORDS = 700
 class GeminiAPIError(Exception):
     pass
 
+# Load the semantic similarity model (do this once, outside the function)
+@st.cache_resource(show_spinner=False)
+def get_similarity_model():
+    return SentenceTransformer('all-MiniLM-L6-v2')
+
+SIMILARITY_THRESHOLD = 0.8
+
 def rewrite_paragraph(paragraph: str, style: str, api_key: str, previous_hashes=None) -> str:
     """
     Rewrite the input paragraph using Gemini LLM for the specified style.
@@ -26,9 +35,9 @@ def rewrite_paragraph(paragraph: str, style: str, api_key: str, previous_hashes=
 
     prompt = (
         f"Rewrite the following paragraph in a {style} style. "
-        "Do not repeat the input text verbatim. Make the output unique and different from the input, "
-        "while preserving the original meaning.\n\nParagraph: "
-        f"{paragraph}"
+        "It is essential that the rewritten paragraph conveys exactly the same meaning, facts, and details as the original. "
+        "Do not add, remove, or change any information—just rephrase for style and clarity.\n\n"
+        f"Paragraph: {paragraph}"
     )
 
     headers = {"Content-Type": "application/json"}
@@ -67,6 +76,14 @@ def rewrite_paragraph(paragraph: str, style: str, api_key: str, previous_hashes=
         if output_hash == input_hash or output_hash in previous_hashes:
             raise GeminiAPIError("Gemini LLM returned the same or similar output multiple times. Please try again.")
     return rewritten.strip()
+
+# --- Semantic Similarity Check ---
+def check_similarity(input_text, output_text):
+    model = get_similarity_model()
+    emb1 = model.encode(input_text, convert_to_tensor=True)
+    emb2 = model.encode(output_text, convert_to_tensor=True)
+    similarity = util.pytorch_cos_sim(emb1, emb2).item()
+    return similarity
 
 # --- Sidebar (API Key, About) ---
 st.sidebar.title("Configuration")
@@ -125,6 +142,9 @@ if st.button("Rewrite Paragraph"):
                 api_key,
                 previous_hashes=st.session_state.previous_hashes
             )
+            similarity = check_similarity(paragraph, rewritten)
+            if similarity < SIMILARITY_THRESHOLD:
+                st.warning(f"Warning: The rewritten paragraph may not preserve the original meaning (similarity: {similarity:.2f}). Please review or try again.")
             st.session_state.last_output = rewritten
             st.session_state.previous_hashes.add(
                 hashlib.sha256(rewritten.strip().encode("utf-8")).hexdigest()
