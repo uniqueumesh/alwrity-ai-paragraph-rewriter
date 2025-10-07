@@ -145,16 +145,17 @@ if st.button("Rewrite Paragraph"):
                     previous_hashes=st.session_state.previous_hashes,
                     prompt_instructions=prompt_instructions
                 )
-            similarity = check_similarity(paragraph, rewritten)
+                # Also compute similarity and update state within spinner to avoid gaps
+                similarity = check_similarity(paragraph, rewritten)
+                st.session_state.last_output = rewritten
+                st.session_state.previous_hashes.add(
+                    hashlib.sha256(rewritten.strip().encode("utf-8")).hexdigest()
+                )
+                # Reset TTS state for new output
+                st.session_state.tts_text_hash = ""
+                st.session_state.tts_playing = False
             if similarity < similarity_threshold:
                 st.warning(f"Warning: The rewritten paragraph may not preserve the original meaning (similarity: {similarity:.2f}). Please review or try again.")
-            st.session_state.last_output = rewritten
-            st.session_state.previous_hashes.add(
-                hashlib.sha256(rewritten.strip().encode("utf-8")).hexdigest()
-            )
-            # Reset TTS state for new output
-            st.session_state.tts_text_hash = ""
-            st.session_state.tts_playing = False
 
 
         except GeminiAPIError as e:
