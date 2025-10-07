@@ -31,33 +31,7 @@ paragraph = st.text_area(
     placeholder="Type or paste your paragraph here — ALwrity will rewrite it beautifully (max 700 words)"
 )
 
-# --- Rewriting Mode (moved below input) ---
-st.subheader("Rewriting mode")
-mode = st.selectbox(
-    "Choose mode:",
-    ["Strict (preserve meaning)", "Creative (more freedom)"],
-    index=0,
-    key="mode_select"
-)
-
-st.subheader("Select rewriting style/tone")
-style = st.selectbox(
-    "Choose a style or tone:",
-    [
-        "Clear and Engaging",
-        "Formal",
-        "Casual",
-        "Concise",
-        "Friendly",
-        "Persuasive",
-        "Professional"
-    ],
-    index=0,
-    key="style_select"
-)
-
-# --- Language Selection ---
-st.subheader("Select output language")
+# --- Compact Horizontal Controls below input ---
 language_options = [
     "English",
     "Spanish",
@@ -66,17 +40,45 @@ language_options = [
     "Hindi",
     "Custom..."
 ]
-language_choice = st.selectbox(
-    "Target language:",
-    language_options,
-    index=0,
-    key="language_select"
-)
-if language_choice == "Custom...":
-    custom_language = st.text_input("Enter custom language", key="language_custom")
-    target_language = custom_language.strip() if custom_language else ""
-else:
-    target_language = language_choice
+
+col_mode, col_style, col_lang = st.columns(3)
+with col_mode:
+    mode = st.selectbox(
+        "Choose mode:",
+        ["Strict (preserve meaning)", "Creative (more freedom)"],
+        index=0,
+        key="mode_select",
+        label_visibility="collapsed"
+    )
+with col_style:
+    style = st.selectbox(
+        "Choose a style or tone:",
+        [
+            "Clear and Engaging",
+            "Formal",
+            "Casual",
+            "Concise",
+            "Friendly",
+            "Persuasive",
+            "Professional"
+        ],
+        index=0,
+        key="style_select",
+        label_visibility="collapsed"
+    )
+with col_lang:
+    language_choice = st.selectbox(
+        "Target language:",
+        language_options,
+        index=0,
+        key="language_select",
+        label_visibility="collapsed"
+    )
+    if language_choice == "Custom...":
+        custom_language = st.text_input("Enter custom language", key="language_custom", placeholder="Type a language")
+        target_language = custom_language.strip() if custom_language else ""
+    else:
+        target_language = language_choice
 
 # --- Session State: Track previous outputs to avoid repeats ---
 if "previous_hashes" not in st.session_state:
