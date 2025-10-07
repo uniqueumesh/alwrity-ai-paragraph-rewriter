@@ -1,12 +1,14 @@
 import streamlit as st
 import hashlib
 import os
+import base64
 from dotenv import load_dotenv
 from streamlit.components.v1 import html
 from config.constants import GEMINI_MAX_WORDS
 from errors.gemini_api_error import GeminiAPIError
 from services.rewrite_paragraph import rewrite_paragraph
 from utils.check_similarity import check_similarity
+from services.tts import synthesize_speech, TTSAPIError
 
 # --- App Branding and Header ---
 st.set_page_config(page_title="Alwrity - AI Paragraph Rewriter", page_icon="📝", layout="centered")
@@ -95,6 +97,8 @@ if "tts_text_hash" not in st.session_state:
     st.session_state.tts_text_hash = ""
 if "tts_playing" not in st.session_state:
     st.session_state.tts_playing = False
+if "tts_audio_b64" not in st.session_state:
+    st.session_state.tts_audio_b64 = ""
 
 # Helper: toggle TTS state and immediately rerun to refresh button label and JS
 def _tts_toggle():
@@ -154,6 +158,26 @@ if st.button("Rewrite Paragraph"):
                 # Reset TTS state for new output
                 st.session_state.tts_text_hash = ""
                 st.session_state.tts_playing = False
+                st.session_state.tts_audio_b64 = ""
+
+                # Pre-generate TTS audio via AssemblyAI for instant playback
+                text_hash = hashlib.sha256(rewritten.strip().encode("utf-8")).hexdigest()
+                assembly_key = os.getenv("ASSEMBLYAI_API_KEY", "")
+                if not assembly_key:
+                    try:
+                        assembly_key = st.secrets["ASSEMBLYAI_API_KEY"]
+                    except Exception:
+                        assembly_key = ""
+                if assembly_key:
+                    try:
+                        audio_bytes = synthesize_speech(rewritten, assembly_key)
+                        st.session_state.tts_audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+                        st.session_state.tts_text_hash = text_hash
+                    except TTSAPIError:
+                        # Keep UI functional; playback will fall back to unavailable state
+                        st.session_state.tts_audio_b64 = ""
+                    except Exception:
+                        st.session_state.tts_audio_b64 = ""
             if similarity < similarity_threshold:
                 st.warning(f"Warning: The rewritten paragraph may not preserve the original meaning (similarity: {similarity:.2f}). Please review or try again.")
 
@@ -181,28 +205,43 @@ if st.session_state.last_output:
             </script>
         """, height=0)
 
-    # Listen/Pause toggle using browser TTS for immediate playback
+    # Listen/Pause toggle (prefer pre-generated audio if available; else browser TTS)
     listen_label = "Pause" if st.session_state.tts_playing else "Listen"
     st.button(listen_label, key="tts_toggle", on_click=_tts_toggle)
 
-    # Inject JS to speak or stop immediately based on state
-    # Encode text to safely pass to JS
-    import json as _json
-    text_js = _json.dumps(st.session_state.last_output)
-    if st.session_state.tts_playing:
-        html(f"""
+    # If we have pre-generated audio, use an <audio> element for reliable long playback
+    if st.session_state.tts_audio_b64:
+        control_js = "audio.play();" if st.session_state.tts_playing else "audio.pause();"
+        html(
+            f"""
+            <audio id=\"tts-audio\" src=\"data:audio/mp3;base64,{st.session_state.tts_audio_b64}\"></audio>
             <script>
                 try {{
-                    const txt = {text_js};
-                    window.speechSynthesis.cancel();
-                    const u = new SpeechSynthesisUtterance(txt);
-                    window.speechSynthesis.speak(u);
+                    const audio = document.getElementById('tts-audio');
+                    {control_js}
                 }} catch(e) {{}}
             </script>
-        """, height=0)
+            """,
+            height=0,
+        )
     else:
-        html("""
-            <script>
-                try { window.speechSynthesis.cancel(); } catch(e) {}
-            </script>
-        """, height=0)
+        # Fallback to browser TTS
+        import json as _json
+        text_js = _json.dumps(st.session_state.last_output)
+        if st.session_state.tts_playing:
+            html(f"""
+                <script>
+                    try {{
+                        const txt = {text_js};
+                        window.speechSynthesis.cancel();
+                        const u = new SpeechSynthesisUtterance(txt);
+                        window.speechSynthesis.speak(u);
+                    }} catch(e) {{}}
+                </script>
+            """, height=0)
+        else:
+            html("""
+                <script>
+                    try { window.speechSynthesis.cancel(); } catch(e) {}
+                </script>
+            """, height=0)
