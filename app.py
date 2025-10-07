@@ -24,11 +24,11 @@ if not api_key:
         api_key = ""
 
 # --- Input Section ---
-st.subheader("Enter your paragraph")
 paragraph = st.text_area(
-    f"Paste your paragraph here (max {GEMINI_MAX_WORDS} words):",
+    "",
     height=180,
-    key="paragraph_input"
+    key="paragraph_input",
+    placeholder="Type or paste your paragraph here — ALwrity will rewrite it beautifully (max 700 words)"
 )
 
 # --- Rewriting Mode (moved below input) ---
