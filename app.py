@@ -81,13 +81,11 @@ if language_choice == "Custom...":
 else:
     target_language = language_choice
 
-# --- Session State: Track previous outputs to avoid repeats and store feedback ---
+# --- Session State: Track previous outputs to avoid repeats ---
 if "previous_hashes" not in st.session_state:
     st.session_state.previous_hashes = set()
 if "last_output" not in st.session_state:
     st.session_state.last_output = ""
-if "feedback" not in st.session_state:
-    st.session_state.feedback = []
 
 # --- Set prompt and similarity threshold based on mode ---
 if mode == "Strict (preserve meaning)":
@@ -137,34 +135,6 @@ if st.button("Rewrite Paragraph"):
             st.success("Here's your rewritten paragraph:")
             st.text_area("Rewritten Paragraph", value=rewritten, height=180)
 
-            # --- Feedback Section ---
-            st.markdown("**Was the meaning preserved?**")
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button("👍 Yes", key="feedback_yes"):
-                    st.session_state.feedback.append({
-                        "input": paragraph,
-                        "output": rewritten,
-                        "preserved": True,
-                        "comment": ""
-                    })
-                    st.success("Thank you for your feedback!")
-            with col2:
-                if st.button("👎 No", key="feedback_no"):
-                    st.session_state.feedback.append({
-                        "input": paragraph,
-                        "output": rewritten,
-                        "preserved": False,
-                        "comment": ""
-                    })
-                    st.info("Thank you for your feedback!")
-            feedback_comment = st.text_area("Optional: Leave a comment about the rewrite", key="feedback_comment")
-            if st.button("Submit Comment", key="submit_comment"):
-                if st.session_state.feedback:
-                    st.session_state.feedback[-1]["comment"] = feedback_comment
-                    st.success("Your comment has been submitted!")
-                else:
-                    st.warning("Please provide a thumbs up or down before submitting a comment.")
 
         except GeminiAPIError as e:
             st.error(f"Gemini API Error: {e}")
