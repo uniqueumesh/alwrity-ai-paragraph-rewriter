@@ -54,6 +54,28 @@ style = st.selectbox(
     key="style_select"
 )
 
+# --- Language Selection ---
+st.subheader("Select output language")
+language_options = [
+    "English",
+    "Spanish",
+    "French",
+    "German",
+    "Hindi",
+    "Custom..."
+]
+language_choice = st.selectbox(
+    "Target language:",
+    language_options,
+    index=0,
+    key="language_select"
+)
+if language_choice == "Custom...":
+    custom_language = st.text_input("Enter custom language", key="language_custom")
+    target_language = custom_language.strip() if custom_language else ""
+else:
+    target_language = language_choice
+
 # --- Session State: Track previous outputs to avoid repeats and store feedback ---
 if "previous_hashes" not in st.session_state:
     st.session_state.previous_hashes = set()
@@ -75,6 +97,10 @@ else:
         "It's okay to make stylistic changes or slight modifications, but keep the core message intact."
     )
     similarity_threshold = 0.6
+
+# Append language directive to the prompt instructions
+if 'target_language' in locals() and target_language:
+    prompt_instructions += f" Write the output in {target_language}."
 
 # --- Semantic Similarity Check is imported from utils.check_similarity ---
 
