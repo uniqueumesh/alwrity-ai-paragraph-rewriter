@@ -10,10 +10,6 @@ from utils.check_similarity import check_similarity
 
 # --- App Branding and Header ---
 st.set_page_config(page_title="Alwrity - AI Paragraph Rewriter", page_icon="📝", layout="centered")
-st.title("Alwrity - AI Paragraph Rewriter 📝")
-st.markdown("""
-Rewrite and enhance your paragraphs using advanced AI. Select your preferred style and instantly get a new version of your text.
-""")
 
 # Gemini config and utilities are imported from modular files
 
@@ -27,21 +23,21 @@ if not api_key:
     except Exception:
         api_key = ""
 
-# --- Mode Selection (moved from sidebar) ---
-st.subheader("Rewriting mode")
-mode = st.radio(
-    "Choose mode:",
-    ["Strict (preserve meaning)", "Creative (more freedom)"],
-    index=0,
-    key="mode_select"
-)
-
 # --- Input Section ---
 st.subheader("Enter your paragraph")
 paragraph = st.text_area(
     f"Paste your paragraph here (max {GEMINI_MAX_WORDS} words):",
     height=180,
     key="paragraph_input"
+)
+
+# --- Rewriting Mode (moved below input) ---
+st.subheader("Rewriting mode")
+mode = st.radio(
+    "Choose mode:",
+    ["Strict (preserve meaning)", "Creative (more freedom)"],
+    index=0,
+    key="mode_select"
 )
 
 st.subheader("Select rewriting style/tone")
