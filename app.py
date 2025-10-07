@@ -114,13 +114,14 @@ if st.button("Rewrite Paragraph"):
         st.error(f"Input exceeds Gemini's max word limit of {GEMINI_MAX_WORDS} words.")
     else:
         try:
-            rewritten = rewrite_paragraph(
-                paragraph,
-                style,
-                api_key,
-                previous_hashes=st.session_state.previous_hashes,
-                prompt_instructions=prompt_instructions
-            )
+            with st.spinner("Rewriting your paragraph..."):
+                rewritten = rewrite_paragraph(
+                    paragraph,
+                    style,
+                    api_key,
+                    previous_hashes=st.session_state.previous_hashes,
+                    prompt_instructions=prompt_instructions
+                )
             similarity = check_similarity(paragraph, rewritten)
             if similarity < similarity_threshold:
                 st.warning(f"Warning: The rewritten paragraph may not preserve the original meaning (similarity: {similarity:.2f}). Please review or try again.")
