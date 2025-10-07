@@ -31,6 +31,12 @@ paragraph = st.text_area(
     placeholder="Type or paste your paragraph here — ALwrity will rewrite it beautifully (max 700 words)"
 )
 
+# Guide above the dropdown menus
+st.markdown(
+    "<div style=\"font-size:1.1rem; font-weight:500; margin: 0.75rem 0;\">Set the rewrite mode, pick a tone that fits, and choose the language from the dropdown.</div>",
+    unsafe_allow_html=True
+)
+
 # --- Compact Horizontal Controls below input ---
 language_options = [
     "English",
