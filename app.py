@@ -1,5 +1,7 @@
 import streamlit as st
 import hashlib
+import os
+from dotenv import load_dotenv
 from config.constants import GEMINI_MAX_WORDS
 from errors.gemini_api_error import GeminiAPIError
 from services.rewrite_paragraph import rewrite_paragraph
@@ -14,20 +16,23 @@ Rewrite and enhance your paragraphs using advanced AI. Select your preferred sty
 
 # Gemini config and utilities are imported from modular files
 
-# --- Sidebar (API Key, About, and Mode Selection) ---
-st.sidebar.title("Configuration")
-api_key = st.sidebar.text_input("Enter your Gemini API key", type="password")
-st.sidebar.markdown("---")
-mode = st.sidebar.radio(
-    "Rewriting Mode:",
-    ["Strict (preserve meaning)", "Creative (more freedom)"]
-)
-st.sidebar.markdown("---")
-st.sidebar.title("About Alwrity")
-st.sidebar.info(
-    """
-    Alwrity - AI Paragraph Rewriter\n\nEffortlessly rewrite and enhance your text for clarity, tone, and engagement.\n\n[Visit Alwrity](https://alwrity.com)
-    """
+# --- API Key Loading (Secrets or .env) ---
+load_dotenv()
+# Prefer local .env during development to avoid Streamlit secrets errors
+api_key = os.getenv("GEMINI_API_KEY", "")
+if not api_key:
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        api_key = ""
+
+# --- Mode Selection (moved from sidebar) ---
+st.subheader("Rewriting mode")
+mode = st.radio(
+    "Choose mode:",
+    ["Strict (preserve meaning)", "Creative (more freedom)"],
+    index=0,
+    key="mode_select"
 )
 
 # --- Input Section ---
@@ -107,7 +112,7 @@ if 'target_language' in locals() and target_language:
 # --- Action Button ---
 if st.button("Rewrite Paragraph"):
     if not api_key or not api_key.strip():
-        st.error("Please enter your Gemini API key in the sidebar.")
+        st.error("API key not configured. Set GEMINI_API_KEY in Streamlit secrets or in a local .env file.")
     elif not paragraph.strip():
         st.warning("Please enter a paragraph to rewrite.")
     elif len(paragraph.split()) > GEMINI_MAX_WORDS:
