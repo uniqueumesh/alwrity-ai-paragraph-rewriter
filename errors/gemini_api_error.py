@@ -1,0 +1,5 @@
+class GeminiAPIError(Exception):
+    pass
+
+
+
