@@ -201,6 +201,3 @@ if st.session_state.last_output:
                 try { window.speechSynthesis.cancel(); } catch(e) {}
             </script>
         """, height=0)
-
-# --- Privacy Notice ---
-st.info("Your API key is only used for this session and is never stored after you close the tool.")
