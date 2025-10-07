@@ -2,6 +2,7 @@ import streamlit as st
 import hashlib
 import os
 from dotenv import load_dotenv
+from streamlit.components.v1 import html
 from config.constants import GEMINI_MAX_WORDS
 from errors.gemini_api_error import GeminiAPIError
 from services.rewrite_paragraph import rewrite_paragraph
@@ -86,6 +87,21 @@ if "previous_hashes" not in st.session_state:
     st.session_state.previous_hashes = set()
 if "last_output" not in st.session_state:
     st.session_state.last_output = ""
+if "tts_text_hash" not in st.session_state:
+    st.session_state.tts_text_hash = ""
+if "tts_playing" not in st.session_state:
+    st.session_state.tts_playing = False
+
+# Helper: toggle TTS state and immediately rerun to refresh button label and JS
+def _tts_toggle():
+    st.session_state.tts_playing = not st.session_state.tts_playing
+    try:
+        st.rerun()
+    except Exception:
+        try:
+            st.experimental_rerun()
+        except Exception:
+            pass
 
 # --- Set prompt and similarity threshold based on mode ---
 if mode == "Strict (preserve meaning)":
@@ -132,14 +148,59 @@ if st.button("Rewrite Paragraph"):
             st.session_state.previous_hashes.add(
                 hashlib.sha256(rewritten.strip().encode("utf-8")).hexdigest()
             )
-            st.success("Here's your rewritten paragraph:")
-            st.text_area("Rewritten Paragraph", value=rewritten, height=180)
+            # Reset TTS state for new output
+            st.session_state.tts_text_hash = ""
+            st.session_state.tts_playing = False
 
 
         except GeminiAPIError as e:
             st.error(f"Gemini API Error: {e}")
         except Exception as e:
             st.error(f"Error: {e}")
+
+# --- Rewritten Output (persistent) and TTS Controls ---
+if st.session_state.last_output:
+    st.success("Here's your rewritten paragraph:")
+    st.text_area("Rewritten Paragraph", value=st.session_state.last_output, height=180)
+
+    # Determine current text hash and reset speech state if text changed
+    current_hash = hashlib.sha256(st.session_state.last_output.strip().encode("utf-8")).hexdigest()
+    text_changed = st.session_state.tts_text_hash != current_hash
+    if text_changed:
+        st.session_state.tts_text_hash = current_hash
+        st.session_state.tts_playing = False
+        # Stop any ongoing speech in the browser
+        html("""
+            <script>
+                try { window.speechSynthesis.cancel(); } catch(e) {}
+            </script>
+        """, height=0)
+
+    # Listen/Pause toggle using browser TTS for immediate playback
+    listen_label = "Pause" if st.session_state.tts_playing else "Listen"
+    st.button(listen_label, key="tts_toggle", on_click=_tts_toggle)
+
+    # Inject JS to speak or stop immediately based on state
+    # Encode text to safely pass to JS
+    import json as _json
+    text_js = _json.dumps(st.session_state.last_output)
+    if st.session_state.tts_playing:
+        html(f"""
+            <script>
+                try {{
+                    const txt = {text_js};
+                    window.speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(txt);
+                    window.speechSynthesis.speak(u);
+                }} catch(e) {{}}
+            </script>
+        """, height=0)
+    else:
+        html("""
+            <script>
+                try { window.speechSynthesis.cancel(); } catch(e) {}
+            </script>
+        """, height=0)
 
 # --- Privacy Notice ---
 st.info("Your API key is only used for this session and is never stored after you close the tool.")
