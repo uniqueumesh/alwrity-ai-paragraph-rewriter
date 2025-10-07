@@ -33,7 +33,7 @@ paragraph = st.text_area(
 
 # --- Rewriting Mode (moved below input) ---
 st.subheader("Rewriting mode")
-mode = st.radio(
+mode = st.selectbox(
     "Choose mode:",
     ["Strict (preserve meaning)", "Creative (more freedom)"],
     index=0,
