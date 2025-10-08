@@ -28,13 +28,20 @@ Rewrite and enhance paragraphs using AI for clarity, tone, and engagement.
 
 ## Features
 
-- ✍️ Rewrite any paragraph with a single click  
-- 🎨 Choose from multiple writing styles (e.g., Formal, Concise, Friendly)  
-- 🔑 Secure: Your Gemini API key is never stored  
-- 🚀 Fast, modern Streamlit web interface  
-- 🛡️ Enforces Gemini LLM input limits for reliability  
-- 🔄 Always generates a unique rewrite, even for repeated inputs  
-- 🖥️ No coding required!
+- ✍️ One‑click paragraph rewriting (Gemini 2.5 Pro)
+- 🎛️ Controls under the textarea (compact, user‑friendly):
+  - Mode: Strict (preserve meaning) or Creative (more freedom)
+  - Style/Tone: Clear and Engaging, Formal, Casual, Concise, Friendly, Persuasive, Professional
+  - Language: English, Spanish, French, German, Hindi, plus Custom
+- 🧠 Meaning check with semantic similarity (warns on drift)
+- 🔊 Listen/Pause the result (instant playback)
+  - Robust long‑text audio via segmented TTS (AssemblyAI) with queued playback
+  - Fallback to browser speech synthesis when needed
+- 📋 Copy text button with clipboard fallback (works in iframes)
+- ⏳ Spinner stays visible until results are fully ready
+- 🔢 Live word counter (0/700) and button disabled until input
+- 🧼 Streamlined UI: no sidebar, no in‑app feedback form
+- 🌙 Dark theme via `.streamlit/config.toml`
 
 ---
 
@@ -43,7 +50,8 @@ Rewrite and enhance paragraphs using AI for clarity, tone, and engagement.
 ### Prerequisites
 
 - Python 3.8 or higher  
-- A Google Gemini API key ([get one here](https://ai.google.dev/))
+- Google Gemini API key ([get one](https://ai.google.dev/))
+- AssemblyAI API key for TTS ([sign up](https://www.assemblyai.com/))
 
 ### Installation
 
@@ -60,7 +68,13 @@ Rewrite and enhance paragraphs using AI for clarity, tone, and engagement.
 
 ### Running the App
 
-Start the Streamlit app:
+1) Create a `.env` file in the project root:
+```env
+GEMINI_API_KEY=your_gemini_key
+ASSEMBLYAI_API_KEY=your_assemblyai_key
+```
+
+2) Start the Streamlit app:
 ```bash
 streamlit run app.py
 ```
@@ -70,33 +84,36 @@ Open the provided local URL in your browser.
 
 ## How to Use
 
-1. **Enter your Gemini API key** in the sidebar.  
-   - Your key is only used for your session and never stored.
-2. **Paste your paragraph** (up to 700 words) in the main input box.
-3. **Choose a rewriting style/tone** from the dropdown.
-4. **Click "Rewrite Paragraph"**.
-5. **View your rewritten paragraph** in the output box.
-6. **Repeat or try different styles** until satisfied!
+1. Paste your paragraph (up to 700 words) in the big textbox.  
+   - The button enables automatically once you type.
+2. Set the dropdowns under the textbox:
+   - Mode (Strict/Creative), Tone, and Language (or Custom).
+3. Click "Rewrite Paragraph"; the spinner stays until it’s ready.
+4. Read the result below. Use Listen/Pause to hear it, or Copy text to copy.
+5. Adjust Mode/Tone/Language and click Rewrite again to try variants.
 
 ---
 
 ## Privacy & Security
 
-- **Your API key is never saved:** It is used only for your session and is erased when the app closes.
-- **Your text is processed securely:** Only sent to Google Gemini for rewriting.
-- **No data is stored or shared** by this tool.
+- Keys are provided via `.env` locally or Streamlit Secrets in deployment.  
+- Text is sent to Gemini for rewriting and to AssemblyAI for audio (when listening).
+- The app does not persist your inputs or outputs.
 
 ---
 
 ## Troubleshooting
 
-- **Gemini API errors:**  
-  - Ensure your API key is correct and has access to Gemini 2.5 Pro.
-  - Check your internet connection.
-  - Input must be under 700 words.
-- **No rewrite or repeated output:**  
-  - Try clicking "Rewrite Paragraph" again for a new result.
-  - If the problem persists, check your API usage or try a different style.
+- Gemini API errors:
+  - Ensure your GEMINI_API_KEY is valid and the input < 700 words.
+  - Network issues can cause timeouts; retry or check connectivity.
+- Audio stops early in embedded pages:
+  - We pre-generate segmented MP3s and queue them for long texts.  
+  - Ensure your iframe allows autoplay: `allow="autoplay; clipboard-read; clipboard-write"`.
+- Copy text doesn’t work in embed:
+  - The button falls back to a textarea copy method. Ensure HTTPS and iframe permissions: `allow="clipboard-read; clipboard-write"`.
+- Warnings in terminal:
+  - Transformers/Torch FutureWarnings are suppressed at startup for a clean log.
 
 ---
 
@@ -116,5 +133,14 @@ This project is licensed under the MIT License.
 
 - [Alwrity Website](https://alwrity.com)
 - [GitHub Issues](https://github.com/uniqueumesh/alwrity-ai-paragraph-rewriter/issues)
+
+---
+
+### Deployment Notes
+
+- Add secrets on Streamlit Cloud (or your host):
+  - `GEMINI_API_KEY`
+  - `ASSEMBLYAI_API_KEY`
+- The UI uses a dark theme via `.streamlit/config.toml`.
 
 ---
