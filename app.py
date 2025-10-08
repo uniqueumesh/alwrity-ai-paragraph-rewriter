@@ -42,6 +42,10 @@ paragraph = st.text_area(
     label_visibility="collapsed",
 )
 
+# Live word counter under textarea
+_words = len(paragraph.split()) if paragraph else 0
+st.caption(f"{_words}/{GEMINI_MAX_WORDS} words")
+
 # Guide above the dropdown menus
 st.markdown(
     "<div style=\"font-size:1.1rem; font-weight:500; margin: 0.75rem 0;\">Set the rewrite mode, pick a tone that fits, and choose the language from the dropdown.</div>",
@@ -136,7 +140,8 @@ if 'target_language' in locals() and target_language:
 # --- Semantic Similarity Check is imported from utils.check_similarity ---
 
 # --- Action Button ---
-if st.button("Rewrite Paragraph"):
+rewrite_clicked = st.button("Rewrite Paragraph", disabled=not paragraph.strip())
+if rewrite_clicked:
     if not api_key or not api_key.strip():
         st.error("API key not configured. Set GEMINI_API_KEY in Streamlit secrets or in a local .env file.")
     elif not paragraph.strip():
