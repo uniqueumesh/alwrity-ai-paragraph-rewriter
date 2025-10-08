@@ -1,9 +1,10 @@
-import streamlit as st
+import streamlit as st  # type: ignore
 import hashlib
 import os
 import base64
+import warnings
 from dotenv import load_dotenv
-from streamlit.components.v1 import html
+from streamlit.components.v1 import html  # type: ignore
 from config.constants import GEMINI_MAX_WORDS
 from errors.gemini_api_error import GeminiAPIError
 from services.rewrite_paragraph import rewrite_paragraph
@@ -12,6 +13,13 @@ from services.tts import synthesize_speech, TTSAPIError
 
 # --- App Branding and Header ---
 st.set_page_config(page_title="Alwrity - AI Paragraph Rewriter", page_icon="📝", layout="centered")
+
+# Suppress noisy FutureWarning from transformers/torch about encoder_attention_mask
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    message=r".*encoder_attention_mask.*BertSdpaSelfAttention.*",
+)
 
 # Gemini config and utilities are imported from modular files
 
@@ -27,10 +35,11 @@ if not api_key:
 
 # --- Input Section ---
 paragraph = st.text_area(
-    "",
+    "Paragraph",
     height=180,
     key="paragraph_input",
-    placeholder="Type or paste your paragraph here — ALwrity will rewrite it beautifully (max 700 words)"
+    placeholder="Type or paste your paragraph here — ALwrity will rewrite it beautifully (max 700 words)",
+    label_visibility="collapsed",
 )
 
 # Guide above the dropdown menus
@@ -102,16 +111,9 @@ if "tts_audio_b64" not in st.session_state:
 if "tts_segments_b64" not in st.session_state:
     st.session_state.tts_segments_b64 = []
 
-# Helper: toggle TTS state and immediately rerun to refresh button label and JS
+# Helper: toggle TTS state (no rerun in callback to avoid Streamlit no-op warning)
 def _tts_toggle():
     st.session_state.tts_playing = not st.session_state.tts_playing
-    try:
-        st.rerun()
-    except Exception:
-        try:
-            st.experimental_rerun()
-        except Exception:
-            pass
 
 # --- Set prompt and similarity threshold based on mode ---
 if mode == "Strict (preserve meaning)":
@@ -175,7 +177,7 @@ if st.button("Rewrite Paragraph"):
                 if assembly_key:
                     try:
                         # Split text into sentence-like chunks ~200-300 chars
-                        import re, textwrap
+                        import re
                         sentences = re.split(r'(?<=[.!?])\s+', rewritten.strip())
                         chunks = []
                         buf = ''
@@ -217,7 +219,7 @@ if st.session_state.last_output:
     if text_changed:
         st.session_state.tts_text_hash = current_hash
         st.session_state.tts_playing = False
-        st.session_state.copy_status = "Copy text"
+        
         # Stop any ongoing speech in the browser
         html("""
             <script>
