@@ -217,6 +217,7 @@ if st.session_state.last_output:
     if text_changed:
         st.session_state.tts_text_hash = current_hash
         st.session_state.tts_playing = False
+        st.session_state.copy_status = "Copy text"
         # Stop any ongoing speech in the browser
         html("""
             <script>
@@ -226,7 +227,69 @@ if st.session_state.last_output:
 
     # Listen/Pause toggle (prefer pre-generated audio if available; else browser TTS)
     listen_label = "Pause" if st.session_state.tts_playing else "Listen"
-    st.button(listen_label, key="tts_toggle", on_click=_tts_toggle)
+    btn_col1, btn_col2 = st.columns([1, 1])
+    with btn_col1:
+        st.button(listen_label, key="tts_toggle", on_click=_tts_toggle)
+
+    # Copy button using JS with secure clipboard API and textarea fallback for iframes
+    with btn_col2:
+        _copy_id = "copy-btn-" + hashlib.sha256(st.session_state.last_output.encode("utf-8")).hexdigest()[:8]
+        import json as _json
+        _copy_text_js = _json.dumps(st.session_state.last_output)
+        html(
+            f"""
+            <style>
+              .alwrity-copy-btn {{
+                padding: 0.5rem 0.75rem;
+                border-radius: 0.5rem;
+                cursor: pointer;
+              }}
+              @media (prefers-color-scheme: dark) {{
+                .alwrity-copy-btn {{ background:#1f2937; color:#f9fafb; border:1px solid #374151; }}
+                .alwrity-copy-btn:hover {{ background:#273244; }}
+              }}
+              @media (prefers-color-scheme: light) {{
+                .alwrity-copy-btn {{ background:#f3f4f6; color:#111827; border:1px solid #d1d5db; }}
+                .alwrity-copy-btn:hover {{ background:#eaecef; }}
+              }}
+            </style>
+            <button id=\"{_copy_id}\" class=\"alwrity-copy-btn\">Copy text</button>
+            <script>
+              (function(){{
+                const btn = document.getElementById('{_copy_id}');
+                const textToCopy = {_copy_text_js};
+                async function copyText(t){{
+                  try {{
+                    if (navigator.clipboard && window.isSecureContext) {{
+                      await navigator.clipboard.writeText(t);
+                      return true;
+                    }}
+                  }} catch(e) {{}}
+                  try {{
+                    const ta = document.createElement('textarea');
+                    ta.value = t;
+                    ta.setAttribute('readonly','');
+                    ta.style.position = 'fixed';
+                    ta.style.top = '-1000px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    return ok;
+                  }} catch(e) {{ return false; }}
+                }}
+                if (btn) {{
+                  btn.addEventListener('click', async () => {{
+                    const ok = await copyText(textToCopy);
+                    btn.textContent = ok ? 'Copied' : 'Copy failed';
+                    setTimeout(()=>{{ btn.textContent = 'Copy text'; }}, 2000);
+                  }});
+                }}
+              }})();
+            </script>
+            """,
+            height=40,
+        )
 
     # If we have segmented audio, queue it reliably across long texts
     if st.session_state.tts_segments_b64 and len(st.session_state.tts_segments_b64) > 0:
@@ -277,3 +340,5 @@ if st.session_state.last_output:
                     try { window.speechSynthesis.cancel(); } catch(e) {}
                 </script>
             """, height=0)
+
+    # No separate clipboard injection needed; handled inline with the button JS above
